@@ -1,0 +1,11 @@
+# Binaries
+nscanner
+nscanner.exe
+
+# OS stuff
+.DS_Store
+Thumbs.db
+
+# Go stuff
+go.sum
+vendor/
