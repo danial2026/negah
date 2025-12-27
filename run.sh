@@ -35,7 +35,7 @@ echo -e "${GREEN}[OK] Nmap found: ${NMAP_VERSION}${NC}"
 # 3. Clean and Build
 echo -e "\nBuilding The Watchman..."
 go mod tidy
-go build -o nscanner main.go
+go build -o nscanner .
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}[SUCCESS] Build complete.${NC}\n"
