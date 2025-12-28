@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net"
@@ -37,6 +38,27 @@ func ExecuteCommand(name string, args ...string) error {
 	return cmd.Run()
 }
 
+// ExecuteCommandWithOutput runs a command and captures its output
+func ExecuteCommandWithOutput(name string, args ...string) (string, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	
+	// Build command info
+	cmdInfo := fmt.Sprintf("[Running] %s %s\n\n", name, strings.Join(args, " "))
+	
+	err := cmd.Run()
+	
+	// Combine command info with output
+	output := cmdInfo + stdout.String()
+	if stderr.Len() > 0 {
+		output += "\n[Errors]\n" + stderr.String()
+	}
+	
+	return output, err
+}
+
 // GetPublicIP reaches out to ipapi.co to get our ip and location
 func GetPublicIP() {
 	resp, err := http.Get("https://ipapi.co/json/")
@@ -48,6 +70,22 @@ func GetPublicIP() {
 
 	body, _ := io.ReadAll(resp.Body)
 	fmt.Printf("\n--- Your Public IP Info ---\n%s\n", string(body))
+}
+
+// GetPublicIPWithOutput returns public IP info as a string
+func GetPublicIPWithOutput() (string, error) {
+	resp, err := http.Get("https://ipapi.co/json/")
+	if err != nil {
+		return "", fmt.Errorf("couldn't grab public IP info: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	
+	return fmt.Sprintf("--- Your Public IP Info ---\n%s\n", string(body)), nil
 }
 
 // GetLocalInfo checks our own interfaces to see what's happening locally
@@ -67,6 +105,27 @@ func GetLocalInfo() {
 	}
 
 	fmt.Printf("\nRunning on %s (%s)\n", runtime.GOOS, runtime.GOARCH)
+}
+
+// GetLocalInfoWithOutput returns local interface info as a string
+func GetLocalInfoWithOutput() (string, error) {
+	var output strings.Builder
+	output.WriteString("--- Local Interface Details ---\n")
+	
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", fmt.Errorf("had trouble reading interfaces: %v", err)
+	}
+
+	for _, i := range interfaces {
+		addrs, _ := i.Addrs()
+		for _, addr := range addrs {
+			output.WriteString(fmt.Sprintf("Interface: %s | Address: %s\n", i.Name, addr.String()))
+		}
+	}
+
+	output.WriteString(fmt.Sprintf("\nRunning on %s (%s)\n", runtime.GOOS, runtime.GOARCH))
+	return output.String(), nil
 }
 
 // GetFeatures returns all 35 tools we've packed into this script
@@ -145,4 +204,37 @@ func RunScan(feature ScanFeature, target string) {
 	if err != nil {
 		fmt.Printf("\nSomething went wrong during the scan: %v\n", err)
 	}
+}
+
+// RunScanWithOutput is like RunScan but captures and returns the output
+func RunScanWithOutput(feature ScanFeature, target string) (string, error) {
+	switch feature.Command {
+	case "INTERNAL_PUBLIC_IP":
+		return GetPublicIPWithOutput()
+	case "INTERNAL_LOCAL_INFO":
+		return GetLocalInfoWithOutput()
+	case "INTERNAL_WHOIS":
+		return ExecuteCommandWithOutput("whois", target)
+	}
+
+	// Figure out if we need sudo
+	args := []string{}
+	cmdName := ""
+	if feature.Sudo && runtime.GOOS != "windows" {
+		cmdName = "sudo"
+		args = append(args, "nmap")
+	} else {
+		cmdName = "nmap"
+	}
+
+	// Splitting the command string into parts nmap understands
+	cmdParts := strings.Fields(feature.Command)
+	args = append(args, cmdParts...)
+
+	// Add the IP or domain at the end
+	if target != "" {
+		args = append(args, target)
+	}
+
+	return ExecuteCommandWithOutput(cmdName, args...)
 }
