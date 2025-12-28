@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -9,7 +10,6 @@ import (
 
 	"negah/scanner"
 
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -331,10 +331,10 @@ func (m model) handleInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m model) handleResultKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "c":
-		// Copy to clipboard
-		err := clipboard.WriteAll(m.scanOutput)
+		// Copy to clipboard using native commands
+		err := copyToClipboard(m.scanOutput)
 		if err != nil {
-			m.message = "Failed to copy to clipboard"
+			m.message = "Failed to copy to clipboard: " + err.Error()
 			m.messageColor = ColorError
 		} else {
 			m.message = "✓ Copied to clipboard!"
@@ -645,6 +645,33 @@ func (m model) viewHelp() string {
 	b.WriteString(footer)
 
 	return b.String()
+}
+
+// copyToClipboard copies text to clipboard using native OS commands
+func copyToClipboard(text string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin": // macOS
+		cmd = exec.Command("pbcopy")
+	case "linux":
+		// Try xclip first, then xsel
+		if _, err := exec.LookPath("xclip"); err == nil {
+			cmd = exec.Command("xclip", "-selection", "clipboard")
+		} else if _, err := exec.LookPath("xsel"); err == nil {
+			cmd = exec.Command("xsel", "--clipboard", "--input")
+		} else {
+			return fmt.Errorf("neither xclip nor xsel found")
+		}
+	case "windows":
+		cmd = exec.Command("clip")
+	default:
+		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
+
+	var stdin bytes.Buffer
+	stdin.WriteString(text)
+	cmd.Stdin = &stdin
+	return cmd.Run()
 }
 
 // makeClickableURL creates a clickable hyperlink using OSC 8 escape sequences
