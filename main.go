@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"negah/scanner"
 	"os"
-	"the_watchman/scanner"
 	"strconv"
 	"strings"
 )
@@ -20,7 +20,7 @@ func main() {
 
 	for {
 		fmt.Println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-		fmt.Println("                THE WATCHMAN                ")
+		fmt.Println("                    NEGAH                    ")
 		fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
 		for _, t := range tools {
@@ -33,7 +33,7 @@ func main() {
 
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
-		
+
 		if input == "0" {
 			fmt.Println("Goodbye.")
 			break
@@ -64,8 +64,8 @@ func main() {
 		}
 
 		scanner.RunScan(selected, target)
-		
-		fmt.Print("\nDone. Press Enter to return to the Watchman...")
+
+		fmt.Print("\nDone. Press Enter to return to Negah...")
 		reader.ReadString('\n')
 	}
 }

@@ -1,9 +1,9 @@
-# THE WATCHMAN - Network Guardian
+# NEGAH
 
-**The Watchman** is a terminal-based network scanner written in Go.
+**Negah** is a terminal-based network scanner written in Go.
 It wraps **Nmap** into a simple interactive menu so you don’t have to remember flags, scripts, or arcane syntax.
 
-> ✨ For latest updates, check out the [dev](https://github.com/danial2026/the_watchman/tree/dev) branch ✨
+> ✨ For latest updates, check out the [dev](https://github.com/danial2026/negah/tree/dev) branch ✨
 
 ![Screenshot 2](./screenshot-2.png)
 

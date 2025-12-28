@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# The Watchman - Builder & Runner
+# Negah - Builder & Runner
 
 # Colors for flair
 RED='\033[0;31m'
@@ -8,7 +8,7 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-echo "      The Watchman Environment Check        "
+echo "         Negah Environment Check            "
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
 # 1. Check for Go
@@ -33,7 +33,7 @@ NMAP_VERSION=$(nmap --version | head -n 1 | awk '{print $3}')
 echo -e "${GREEN}[OK] Nmap found: ${NMAP_VERSION}${NC}"
 
 # 3. Clean and Build
-echo -e "\nBuilding The Watchman..."
+echo -e "\nBuilding Negah..."
 go mod tidy
 go build -o nscanner main.go
 
