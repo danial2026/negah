@@ -128,6 +128,116 @@ func GetLocalInfoWithOutput() (string, error) {
 	return output.String(), nil
 }
 
+// GetLocalNetworkRange returns the local network range (e.g., "192.168.1.0/24")
+func GetLocalNetworkRange() string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "192.168.1.0/24" // Default fallback
+	}
+
+	for _, i := range interfaces {
+		// Skip loopback and down interfaces
+		if i.Flags&net.FlagLoopback != 0 || i.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		addrs, err := i.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			if !ok {
+				continue
+			}
+
+			ip := ipNet.IP
+			// Skip IPv6
+			if ip.To4() == nil {
+				continue
+			}
+
+			// Check if it's a private network
+			if ip.IsPrivate() {
+				// Calculate network range
+				mask := ipNet.Mask
+				network := ip.Mask(mask)
+				ones, _ := mask.Size()
+				return fmt.Sprintf("%s/%d", network.String(), ones)
+			}
+		}
+	}
+
+	return "192.168.1.0/24" // Default fallback
+}
+
+// GetLocalIP returns the first local non-loopback IP address
+func GetLocalIP() string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "127.0.0.1" // Default fallback
+	}
+
+	for _, i := range interfaces {
+		if i.Flags&net.FlagLoopback != 0 || i.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		addrs, err := i.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			if !ok {
+				continue
+			}
+
+			ip := ipNet.IP
+			if ip.To4() != nil && ip.IsPrivate() {
+				return ip.String()
+			}
+		}
+	}
+
+	return "127.0.0.1" // Default fallback
+}
+
+// GetDefaultTarget returns a sensible default target based on scan ID
+func GetDefaultTarget(scanID int) string {
+	switch scanID {
+	case 1: // Local Discovery - ping sweep
+		return GetLocalNetworkRange()
+	case 2, 3, 5, 6, 7, 8, 9, 14, 15, 22, 23, 24: // General port/service scans
+		return "scanme.nmap.org"
+	case 4: // Custom Range
+		return "scanme.nmap.org"
+	case 10, 25, 26, 27, 28, 29, 30, 31, 32, 33: // Firewall/stealth scans
+		return GetLocalIP() // Test on local IP first
+	case 11: // Path Tracer
+		return "8.8.8.8" // Google DNS
+	case 12, 13: // Internal scans - no target needed
+		return ""
+	case 16, 17, 34: // Web-related scans (Web Titles, SSL/TLS, Heartbleed)
+		return "example.com"
+	case 18: // SMB OS Guess - typically local network
+		return GetLocalIP()
+	case 19: // DNS Brute
+		return "example.com"
+	case 20: // SSH Audit
+		return GetLocalIP() // Often SSH is on local network
+	case 21: // DB Hunt - database ports
+		return GetLocalIP() // Databases often on local network
+	case 35: // Whois Lookup
+		return "example.com"
+	default:
+		// Default fallback
+		return "scanme.nmap.org"
+	}
+}
+
 // GetFeatures returns all 35 tools we've packed into this script
 func GetFeatures() []ScanFeature {
 	return []ScanFeature{

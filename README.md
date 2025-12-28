@@ -1,7 +1,6 @@
 # NEGAH
 
-**Negah** is a beautiful terminal-based network scanner written in Go.
-It wraps **Nmap** into an interactive TUI (Terminal User Interface) so you don't have to remember flags, scripts, or arcane syntax.
+**Negah** is a beautiful terminal-based network scanner written in Go
 
 > ✨ For latest updates, check out the [dev](https://github.com/danial2026/negah/tree/dev) branch ✨
 

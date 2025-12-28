@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -189,6 +191,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "?":
 			m.showHelp = !m.showHelp
 			return m, nil
+		case "g":
+			// Open git URL in browser (only in menu view)
+			if m.currentView == menuView {
+				err := openURL("https://github.com/danial2026/negah")
+				if err != nil {
+					m.message = "Failed to open URL"
+					m.messageColor = ColorError
+				} else {
+					m.message = "Opening GitHub in browser..."
+					m.messageColor = ColorSuccess
+				}
+				return m, nil
+			}
 		}
 
 		// View-specific keys
@@ -259,7 +274,8 @@ func (m model) handleMenuKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Move to input view
 		m.needsTarget = true
 		m.currentView = inputView
-		m.textInput.SetValue("")
+		defaultTarget := scanner.GetDefaultTarget(m.selected.ID)
+		m.textInput.SetValue(defaultTarget)
 		m.textInput.Placeholder = "Enter target (IP, Domain, or Range)"
 		m.textInput.Focus()
 		m.message = ""
@@ -282,7 +298,7 @@ func (m model) handleInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// Save target and check if we need ports
 			m.targetInput = m.textInput.Value()
 			if m.needsPorts {
-				m.textInput.SetValue("")
+				m.textInput.SetValue("80,443")
 				m.textInput.Placeholder = "Enter ports (e.g., 80,443 or 1-1000)"
 				m.needsTarget = false
 				return m, nil
@@ -418,10 +434,19 @@ func (m model) viewMenu() string {
 	}
 
 	// Footer
-	footer := m.footerStyle.Render(
-		"↑/↓: Navigate • Enter: Select • ?: Help • q: Quit",
-	)
+	footerContent := "↑/↓: Navigate • Enter: Select • ?: Help • q: Quit • g: Open GitHub"
+	gitURL := "https://github.com/danial2026/negah"
+
+	footer := m.footerStyle.Render(footerContent)
 	b.WriteString(footer)
+	b.WriteString("\n")
+
+	// Create styled URL with emoji
+	gitLink := lipgloss.NewStyle().
+		Foreground(ColorSecondary).
+		Faint(true).
+		Render("  🔗 " + gitURL)
+	b.WriteString(gitLink)
 
 	return b.String()
 }
@@ -620,6 +645,26 @@ func (m model) viewHelp() string {
 	b.WriteString(footer)
 
 	return b.String()
+}
+
+// makeClickableURL creates a clickable hyperlink using OSC 8 escape sequences
+func makeClickableURL(url, text string) string {
+	// OSC 8 escape sequence: \033]8;;URL\033\\TEXT\033]8;;\033\\
+	return fmt.Sprintf("\033]8;;%s\033\\%s\033]8;;\033\\", url, text)
+}
+
+// openURL opens the URL in the default browser
+func openURL(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default: // Linux and others
+		cmd = exec.Command("xdg-open", url)
+	}
+	return cmd.Run()
 }
 
 // renderHeader returns the ASCII art header (responsive to terminal height)
