@@ -3,7 +3,7 @@
 **The Watchman** is a beautiful terminal-based network scanner written in Go.
 It wraps **Nmap** into an interactive TUI (Terminal User Interface) so you don't have to remember flags, scripts, or arcane syntax.
 
-![Screenshot 2](./screenshot-2.png)
+![Screenshot 1](./screenshots/screenshot-1.png)
 
 ## ✨ Features
 
